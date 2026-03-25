@@ -3,25 +3,27 @@ import googlemaps
 import folium
 from streamlit_folium import st_folium
 
-# 1. Настройка на страницата
 st.set_page_config(
     page_title="GEOTON | Транспортен Калкулатор", 
     layout="centered", 
     page_icon="🏗️"
 )
 
-# Стилизиране с CSS - ФИКС ЗА ЦЕНТРИРАНЕ И РАЗСТОЯНИЯ
+# CSS за изчистен дизайн и премахване на бутона за цял екран
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #ffffff;
+    .stApp { background-color: #ffffff; }
+    
+    /* Премахване на бутона за уголемяване на картинката */
+    button[title="Enlarge image"] {
+        display: none !important;
     }
-    /* Центриране на логото и премахване на празното пространство под него */
+    
     [data-testid="stImage"] {
         display: flex;
         justify-content: center;
-        margin-bottom: -60px; /* Избутва заглавието нагоре */
-        margin-top: -30px;    /* Свива горното поле */
+        margin-bottom: -50px;
+        margin-top: -20px;
     }
     .main-title {
         color: #004b87;
@@ -57,19 +59,18 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. ЛОГО - Поставяме го в центрирана колона
+# Лого
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     try:
+        # Добавяме параметри за изключване на интерактивността
         st.image("logo.jpg", width=280)
     except:
         st.markdown("<h1 style='text-align:center;'>GEOTON</h1>", unsafe_allow_html=True)
 
-# 3. ЗАГЛАВИЯ
 st.markdown("<h1 class='main-title'>Транспортен Калкулатор</h1>", unsafe_allow_html=True)
 st.markdown("<p class='sub-title'>Геотон бетонови изделия</p>", unsafe_allow_html=True)
 
-# 4. КОНФИГУРАЦИЯ
 try:
     API_KEY = st.secrets["GOOGLE_MAPS_API_KEY"]
     gmaps = googlemaps.Client(key=API_KEY)
@@ -77,7 +78,6 @@ except:
     st.error("Липсва API Key!")
     st.stop()
 
-# 5. ВХОДНИ ДАННИ
 st.markdown("<p class='info-text'>📍 Начална точка: Производствена база Геотон</p>", unsafe_allow_html=True)
 
 c1, c2 = st.columns([1, 2])
