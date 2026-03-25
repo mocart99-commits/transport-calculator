@@ -62,6 +62,7 @@ st.markdown("""
         font-weight: bold;
         margin-top: 10px;
         color: white !important;
+        font-size: 14px;
     }
     .viber-btn { background-color: #7360f2; }
     .email-btn { background-color: #ea4335; }
@@ -93,7 +94,8 @@ st.markdown("<p class='info-text'>📍 Начална точка: Произво
 # 5. ВХОДНИ ДАННИ
 c1, c2 = st.columns([1, 2])
 with c1:
-    km_price = st.number_input("Цена (€/км):", value=1.50, step=0.10)
+    # Променен текст тук
+    km_price = st.number_input("Цена без ДДС (€/км):", value=1.50, step=0.10, format="%.2f")
 with c2:
     customer_addr = st.text_input("Адрес на клиента:", placeholder="Град, улица...")
 
@@ -110,8 +112,11 @@ if st.button("ИЗЧИСЛИ ТРАНСПОРТ"):
                 total_cost = dist_km * km_price
                 
                 st.markdown("---")
-                st.metric("Разстояние", f"{dist_km:.1f} км")
-                st.metric("Цена (без ДДС)", f"{total_cost:.2f} €")
+                
+                # РЕЗУЛТАТИ НА ЕДИН РЕД
+                res_col1, res_col2 = st.columns(2)
+                res_col1.metric("Разстояние", f"{dist_km:.1f} км")
+                res_col2.metric("Обща цена (без ДДС)", f"{total_cost:.2f} €")
                 
                 # ПОДГОТОВКА НА СЪОБЩЕНИЕТО
                 msg = f"ГЕОТОН - Транспортна калкулация:\nАдрес: {customer_addr}\nРазстояние: {dist_km:.1f} км\nЦена: {total_cost:.2f} € без ДДС"
@@ -121,7 +126,7 @@ if st.button("ИЗЧИСЛИ ТРАНСПОРТ"):
                 col_g, col_v, col_e = st.columns(3)
                 
                 with col_g:
-                    google_link = f"https://www.google.com/maps/dir/?api=1&origin={lat},{lng}&destination={urllib.parse.quote(customer_addr)}"
+                    google_link = f"https://www.google.com/maps/dir/?api=1&origin={lat},{lng}&destination={urllib.parse.quote(customer_addr)}&travelmode=driving"
                     st.markdown(f'<a href="{google_link}" target="_blank" class="share-btn google-btn">Google Maps</a>', unsafe_allow_html=True)
                 
                 with col_v:
@@ -142,6 +147,8 @@ if st.button("ИЗЧИСЛИ ТРАНСПОРТ"):
                 folium.Marker(route_line[0], icon=folium.Icon(color='blue', icon='industry', prefix='fa')).add_to(m)
                 folium.Marker(route_line[-1], icon=folium.Icon(color='green', icon='truck', prefix='fa')).add_to(m)
                 st_folium(m, width="100%", height=400, returned_objects=[])
+            else:
+                st.error("Неуспешно намиране на маршрут.")
         except Exception as e:
             st.error(f"Грешка: {e}")
 
