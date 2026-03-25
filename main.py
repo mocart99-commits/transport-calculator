@@ -3,6 +3,7 @@ import googlemaps
 import folium
 from streamlit_folium import st_folium
 import base64
+import urllib.parse
 
 # 1. Настройка на страницата
 st.set_page_config(
@@ -69,6 +70,18 @@ st.markdown("""
         font-weight: bold;
         border: none;
     }
+    .google-btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        background-color: #34a853;
+        color: white !important;
+        padding: 10px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: bold;
+        margin-top: 10px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -97,7 +110,8 @@ if st.button("ИЗЧИСЛИ ТРАНСПОРТ"):
     if customer_addr:
         try:
             # ТВОИТЕ GPS КООРДИНАТИ
-            factory_coords = (42.57318447773442, 27.495216046397218)
+            lat, lng = 42.57318447773442, 27.495216046397218
+            factory_coords = (lat, lng)
             
             directions = gmaps.directions(factory_coords, customer_addr, mode="driving", language="bg")
             
@@ -111,20 +125,22 @@ if st.button("ИЗЧИСЛИ ТРАНСПОРТ"):
                 res_c1.metric("Разстояние", f"{dist_km:.1f} км")
                 res_c2.metric("Цена (без ДДС)", f"{total_cost:.2f} €")
                 
+                # Линк за Google Maps
+                google_maps_link = f"https://www.google.com/maps/dir/?api=1&origin={lat},{lng}&destination={urllib.parse.quote(customer_addr)}&travelmode=driving"
+                st.markdown(f'<a href="{google_maps_link}" target="_blank" class="google-btn">Отвори маршрута в Google Maps ↗️</a>', unsafe_allow_html=True)
+                
+                # Карта (OpenStreetMap за визуализация)
                 polyline_points = googlemaps.convert.decode_polyline(res['overview_polyline']['points'])
                 route_line = [[p['lat'], p['lng']] for p in polyline_points]
                 
-                # КАРТА - премахваме фиксирания zoom, за да се вижда целия маршрут
-                m = folium.Map(location=route_line[len(route_line)//2], zoom_start=10)
-                
-                # Автоматично нагласяне на камерата според маршрута
+                m = folium.Map(location=route_line[len(route_line)//2])
                 sw = min(route_line, key=lambda x: x[0]), min(route_line, key=lambda x: x[1])
                 ne = max(route_line, key=lambda x: x[0]), max(route_line, key=lambda x: x[1])
                 m.fit_bounds([sw, ne]) 
                 
                 folium.PolyLine(route_line, color="#004b87", weight=6).add_to(m)
-                folium.Marker(route_line[0], popup="Геотон", icon=folium.Icon(color='blue', icon='industry', prefix='fa')).add_to(m)
-                folium.Marker(route_line[-1], popup="Клиент", icon=folium.Icon(color='green', icon='truck', prefix='fa')).add_to(m)
+                folium.Marker(route_line[0], icon=folium.Icon(color='blue', icon='industry', prefix='fa')).add_to(m)
+                folium.Marker(route_line[-1], icon=folium.Icon(color='green', icon='truck', prefix='fa')).add_to(m)
                 
                 st_folium(m, width="100%", height=400, returned_objects=[])
             else:
