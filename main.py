@@ -11,7 +11,7 @@ st.set_page_config(
     page_icon="🏗️"
 )
 
-# 2. Функция за зареждане на картинка без бутон "Enlarge"
+# 2. Функция за логото (заобикаля бутона Enlarge)
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, 'rb') as f:
         data = f.read()
@@ -20,7 +20,6 @@ def get_base64_of_bin_file(bin_file):
 def display_logo(file_path):
     try:
         bin_str = get_base64_of_bin_file(file_path)
-        # Използваме чист HTML, за да избегнем рамките на Streamlit и бутона Fullscreen
         html_code = f'''
             <div style="display: flex; justify-content: center; margin-top: -20px; margin-bottom: 0px;">
                 <img src="data:image/jpeg;base64,{bin_str}" style="width: 280px; pointer-events: none;">
@@ -30,18 +29,14 @@ def display_logo(file_path):
     except:
         st.markdown("<h1 style='text-align:center; color:#004b87;'>GEOTON</h1>", unsafe_allow_html=True)
 
-# 3. Стилизиране с CSS
+# 3. CSS Стилизиране
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
-    
-    /* Скриване на всички системни бутони над картинки */
-    button[title="Enlarge image"], 
-    [data-testid="stImageHoverIcons"] {
+    button[title="Enlarge image"], [data-testid="stImageHoverIcons"] {
         display: none !important;
         visibility: hidden !important;
     }
-    
     .main-title {
         color: #004b87;
         font-family: 'Arial', sans-serif;
@@ -77,18 +72,18 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# ПОКАЗВАНЕ НА ЛОГОТО (използваме твоя файл logo.jpg)
+# ПОКАЗВАНЕ НА ЛОГОТО
 display_logo("logo.jpg")
 
 st.markdown("<h1 class='main-title'>Транспортен Калкулатор</h1>", unsafe_allow_html=True)
 st.markdown("<p class='sub-title'>Геотон бетонови изделия</p>", unsafe_allow_html=True)
 
-# --- Останалата част от кода остава същата ---
+# 4. КОНФИГУРАЦИЯ
 try:
     API_KEY = st.secrets["GOOGLE_MAPS_API_KEY"]
     gmaps = googlemaps.Client(key=API_KEY)
 except:
-    st.error("Липсва API Key в Secrets!")
+    st.error("Липсва API Key!")
     st.stop()
 
 st.markdown("<p class='info-text'>📍 Начална точка: Производствена база Геотон</p>", unsafe_allow_html=True)
@@ -102,19 +97,23 @@ with c2:
 if st.button("ИЗЧИСЛИ ТРАНСПОРТ"):
     if customer_addr:
         try:
-            factory_coords = (42.5749926, 27.4951604)
+            # НОВИ КООРДИНАТИ - Поставени точно на входа/портала към пътя
+            factory_coords = (42.575230, 27.495760) 
+            
             directions = gmaps.directions(factory_coords, customer_addr, mode="driving", language="bg")
             if directions:
                 res = directions[0]
                 dist_km = res['legs'][0]['distance']['value'] / 1000
                 total_cost = dist_km * km_price
+                
                 st.markdown("---")
                 res_c1, res_c2 = st.columns(2)
                 res_c1.metric("Разстояние", f"{dist_km:.1f} км")
                 res_c2.metric("Цена (без ДДС)", f"{total_cost:.2f} €")
+                
                 polyline_points = googlemaps.convert.decode_polyline(res['overview_polyline']['points'])
                 route_line = [[p['lat'], p['lng']] for p in polyline_points]
-                m = folium.Map(location=route_line[0], zoom_start=8)
+                m = folium.Map(location=route_line[0], zoom_start=13)
                 folium.PolyLine(route_line, color="#004b87", weight=6).add_to(m)
                 folium.Marker(route_line[0], icon=folium.Icon(color='blue', icon='industry', prefix='fa')).add_to(m)
                 folium.Marker(route_line[-1], icon=folium.Icon(color='green', icon='truck', prefix='fa')).add_to(m)
