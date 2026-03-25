@@ -11,7 +11,7 @@ st.set_page_config(
     page_icon="🏗️"
 )
 
-# 2. Функция за логото (заобикаля бутона Enlarge)
+# 2. Функция за логото (за премахване на бутона Enlarge)
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, 'rb') as f:
         data = f.read()
@@ -92,13 +92,13 @@ c1, c2 = st.columns([1, 2])
 with c1:
     km_price = st.number_input("Цена (€/км):", value=1.50, step=0.10)
 with c2:
-    customer_addr = st.text_input("Адрес на клиента:", placeholder="Град, улица...")
+    customer_addr = st.text_input("Адрес на клиента:", placeholder="Град, улица, номер...")
 
 if st.button("ИЗЧИСЛИ ТРАНСПОРТ"):
     if customer_addr:
         try:
-            # НОВИ КООРДИНАТИ - Поставени точно на входа/портала към пътя
-            factory_coords = (42.575230, 27.495760) 
+            # КОРИГИРАНИ КООРДИНАТИ - точно на посочения от Вас вход
+            factory_coords = (42.574635, 27.496558) 
             
             directions = gmaps.directions(factory_coords, customer_addr, mode="driving", language="bg")
             if directions:
@@ -113,12 +113,19 @@ if st.button("ИЗЧИСЛИ ТРАНСПОРТ"):
                 
                 polyline_points = googlemaps.convert.decode_polyline(res['overview_polyline']['points'])
                 route_line = [[p['lat'], p['lng']] for p in polyline_points]
-                m = folium.Map(location=route_line[0], zoom_start=13)
+                m = folium.Map(location=route_line[0], zoom_start=14)
                 folium.PolyLine(route_line, color="#004b87", weight=6).add_to(m)
-                folium.Marker(route_line[0], icon=folium.Icon(color='blue', icon='industry', prefix='fa')).add_to(m)
-                folium.Marker(route_line[-1], icon=folium.Icon(color='green', icon='truck', prefix='fa')).add_to(m)
+                
+                # Маркери
+                folium.Marker(route_line[0], popup="Геотон (Вход/Изход)", icon=folium.Icon(color='blue', icon='industry', prefix='fa')).add_to(m)
+                folium.Marker(route_line[-1], popup="Клиент", icon=folium.Icon(color='green', icon='truck', prefix='fa')).add_to(m)
+                
                 st_folium(m, width="100%", height=400, returned_objects=[])
+            else:
+                st.error("Не може да се намери маршрут до този адрес.")
         except Exception as e:
-            st.error(f"Грешка: {e}")
+            st.error(f"Грешка при изчислението: {e}")
+    else:
+        st.warning("Моля, въведете адрес на клиента.")
 
 st.markdown("<br><p style='text-align: center; color: gray; font-size: 11px;'>© 2024 ГЕОТОН - Бургас</p>", unsafe_allow_html=True)
