@@ -2,64 +2,50 @@ import streamlit as st
 import googlemaps
 import folium
 from streamlit_folium import st_folium
-import base64
 import urllib.parse
 
 # 1. Настройка на страницата
 st.set_page_config(
-    page_title="GEOTON | Транспортен Калкулатор", 
+    page_title="ГЕОТОН | Транспортен Калкулатор", 
     layout="centered", 
     page_icon="🏗️"
 )
 
-# 2. Функция за логото
-def get_base64_of_bin_file(bin_file):
-    with open(bin_file, 'rb') as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
-
-def display_logo(file_path):
-    try:
-        bin_str = get_base64_of_bin_file(file_path)
-        html_code = f'''
-            <div style="display: flex; justify-content: center; margin-top: -20px; margin-bottom: 0px;">
-                <img src="data:image/jpeg;base64,{bin_str}" style="width: 280px; pointer-events: none;">
-            </div>
-        '''
-        st.markdown(html_code, unsafe_allow_html=True)
-    except:
-        st.markdown("<h1 style='text-align:center; color:#004b87;'>GEOTON</h1>", unsafe_allow_html=True)
-
-# 3. CSS Стилизиране
+# 2. CSS Стилизиране
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff; }
-    button[title="Enlarge image"], [data-testid="stImageHoverIcons"] {
-        display: none !important;
-        visibility: hidden !important;
+    
+    .geoton-header {
+        text-align: center;
+        margin-top: -50px;
+        margin-bottom: 30px;
+        padding: 10px;
     }
     .main-title {
         color: #004b87;
         font-family: 'Arial', sans-serif;
         font-weight: bold;
-        text-align: center;
-        margin-top: 5px;
+        font-size: 24px; /* Малко по-малък размер, за да се събере на един ред */
+        text-transform: uppercase;
         margin-bottom: 0px;
     }
     .sub-title {
         color: #555555;
         font-family: 'Arial', sans-serif;
-        font-size: 15px;
-        text-align: center;
-        margin-bottom: 25px;
+        font-size: 16px;
+        margin-top: 5px;
+        font-weight: normal;
     }
     .info-text {
         color: #333333;
         font-weight: bold;
         background-color: #f8f9fa;
-        padding: 10px;
+        padding: 12px;
         border-radius: 5px;
         border-left: 5px solid #004b87;
+        margin-bottom: 25px;
+        font-size: 14px;
     }
     div.stButton > button:first-child {
         background-color: #004b87;
@@ -69,6 +55,8 @@ st.markdown("""
         width: 100%;
         font-weight: bold;
         border: none;
+        margin-top: 10px;
+        font-size: 16px;
     }
     .google-btn {
         display: block;
@@ -76,40 +64,50 @@ st.markdown("""
         text-align: center;
         background-color: #34a853;
         color: white !important;
-        padding: 10px;
+        padding: 12px;
         border-radius: 8px;
         text-decoration: none;
         font-weight: bold;
-        margin-top: 10px;
+        margin-top: 15px;
+        margin-bottom: 15px;
+        font-size: 15px;
     }
+    /* Скриване на излишни елементи */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-display_logo("logo.jpg")
+# 3. ЗАГЛАВИЯ
+st.markdown("""
+    <div class="geoton-header">
+        <div class="main-title">ГЕОТОН БЕТОНОВИ ИЗДЕЛИЯ ООД</div>
+        <div class="sub-title">Транспортен Калкулатор</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-st.markdown("<h1 class='main-title'>Транспортен Калкулатор</h1>", unsafe_allow_html=True)
-st.markdown("<p class='sub-title'>Геотон бетонови изделия</p>", unsafe_allow_html=True)
-
-# 4. КОНФИГУРАЦИЯ
+# 4. КОНФИГУРАЦИЯ (Secrets)
 try:
     API_KEY = st.secrets["GOOGLE_MAPS_API_KEY"]
     gmaps = googlemaps.Client(key=API_KEY)
-except:
-    st.error("Липсва API Key!")
+except Exception:
+    st.error("Грешка при зареждане на API ключа!")
     st.stop()
 
-st.markdown("<p class='info-text'>📍 Начална точка: Производствена база Геотон</p>", unsafe_allow_html=True)
+st.markdown("<p class='info-text'>📍 Начална точка: Производствена база - гр. Бургас</p>", unsafe_allow_html=True)
 
+# 5. ВХОДНИ ДАННИ
 c1, c2 = st.columns([1, 2])
 with c1:
-    km_price = st.number_input("Цена (€/км):", value=1.50, step=0.10)
+    km_price = st.number_input("Цена (€/км):", value=1.50, step=0.10, format="%.2f")
 with c2:
     customer_addr = st.text_input("Адрес на клиента:", placeholder="Град, улица, номер...")
 
+# 6. ЛОГИКА И ИЗЧИСЛЕНИЯ
 if st.button("ИЗЧИСЛИ ТРАНСПОРТ"):
     if customer_addr:
         try:
-            # ТВОИТЕ GPS КООРДИНАТИ
+            # ТВОИТЕ ТОЧНИ GPS КООРДИНАТИ
             lat, lng = 42.57318447773442, 27.495216046397218
             factory_coords = (lat, lng)
             
@@ -125,27 +123,33 @@ if st.button("ИЗЧИСЛИ ТРАНСПОРТ"):
                 res_c1.metric("Разстояние", f"{dist_km:.1f} км")
                 res_c2.metric("Цена (без ДДС)", f"{total_cost:.2f} €")
                 
-                # Линк за Google Maps
-                google_maps_link = f"https://www.google.com/maps/dir/?api=1&origin={lat},{lng}&destination={urllib.parse.quote(customer_addr)}&travelmode=driving"
-                st.markdown(f'<a href="{google_maps_link}" target="_blank" class="google-btn">Отвори маршрута в Google Maps ↗️</a>', unsafe_allow_html=True)
+                # Линк за Google Maps Навигация
+                destination_encoded = urllib.parse.quote(customer_addr)
+                google_maps_link = f"https://www.google.com/maps/dir/?api=1&origin={lat},{lng}&destination={destination_encoded}&travelmode=driving"
                 
-                # Карта (OpenStreetMap за визуализация)
+                st.markdown(f'<a href="{google_maps_link}" target="_blank" class="google-btn">Отвори в Google Maps за навигация ↗️</a>', unsafe_allow_html=True)
+                
+                # Карта за визуализация
                 polyline_points = googlemaps.convert.decode_polyline(res['overview_polyline']['points'])
                 route_line = [[p['lat'], p['lng']] for p in polyline_points]
                 
                 m = folium.Map(location=route_line[len(route_line)//2])
+                
+                # Автоматичен мащаб според маршрута
                 sw = min(route_line, key=lambda x: x[0]), min(route_line, key=lambda x: x[1])
                 ne = max(route_line, key=lambda x: x[0]), max(route_line, key=lambda x: x[1])
                 m.fit_bounds([sw, ne]) 
                 
-                folium.PolyLine(route_line, color="#004b87", weight=6).add_to(m)
-                folium.Marker(route_line[0], icon=folium.Icon(color='blue', icon='industry', prefix='fa')).add_to(m)
-                folium.Marker(route_line[-1], icon=folium.Icon(color='green', icon='truck', prefix='fa')).add_to(m)
+                folium.PolyLine(route_line, color="#004b87", weight=6, opacity=0.8).add_to(m)
+                folium.Marker(route_line[0], popup="ГЕОТОН", icon=folium.Icon(color='blue', icon='industry', prefix='fa')).add_to(m)
+                folium.Marker(route_line[-1], popup="Клиент", icon=folium.Icon(color='green', icon='truck', prefix='fa')).add_to(m)
                 
                 st_folium(m, width="100%", height=400, returned_objects=[])
             else:
-                st.error("Неуспешно намиране на маршрут.")
+                st.error("Адресът не е намерен. Моля, опитайте с по-конкретни данни.")
         except Exception as e:
             st.error(f"Грешка: {e}")
+    else:
+        st.warning("Моля, въведете адрес на клиента.")
 
-st.markdown("<br><p style='text-align: center; color: gray; font-size: 11px;'>© 2024 ГЕОТОН - Бургас</p>", unsafe_allow_html=True)
+st.markdown("<br><p style='text-align: center; color: gray; font-size: 11px;'>© 2026 ГЕОТОН БЕТОНОВИ ИЗДЕЛИЯ ООД - Бургас</p>", unsafe_allow_html=True)
